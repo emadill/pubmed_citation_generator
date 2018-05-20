@@ -1,0 +1,46 @@
+### Build scraper that autocreates citation for pubmed articles ###
+
+## Set up ##
+import mechanize
+from bs4 import BeautifulSoup
+from string import digits
+
+br = mechanize.Browser()
+br.set_handle_robots(False)
+
+#Get URL from command line
+#for python 2.7, use raw_input()
+#python 3 should use input()
+search_url = raw_input('Enter the PubMed URL for the article abstract you want to cite: ')
+
+br.open(search_url)
+soup = BeautifulSoup(br.response().read(), "lxml")
+
+## Get abstract ##
+abstract = soup.find('div', {'class':'rprt abstract'})
+
+## Get citation components ##
+title = abstract.find('h1').text
+authorsRaw = abstract.find('div', {'class':'auths'}).text
+
+#remove superscript numbers and certain characters for author affiliations
+authors = authorsRaw.translate({ord(i): None for i in digits})
+#limit number of authors appearing in citation
+authorList = authors.split(',')
+#drop blank from list if author has multiple affiliations separated by a comma
+authorList = filter(None, authorList)
+
+#limit number of authors included
+if len(authorList) > 6:
+    authors = ",".join(authorList[:6])
+    authors = authors + ', et al.'
+else:
+    authors = authors
+    
+journal = abstract.find('div', {'class':'cit'}).text
+
+citation = authors + " " + title + " " + journal
+
+## Print ##
+print(citation)
+
